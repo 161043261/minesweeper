@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
-import MdiMine from './components/MdiMine.vue'
+import MineSvg from './components/MineSvg.vue'
 
 const WIDTH = 10
 const HEIGHT = 10
@@ -83,11 +83,11 @@ const getCeilClass = (ceil: CeilState) => {
 
 const textColors = [
   'text-transparent', // 0
-  'text-[#D1F8EF]', // 1
+  'text-[#A3D1C6]', // 1
   'text-[#A1E3F9]', // 2
   'text-[#578FCA]', // 3
   'text-[#3674B5]', // 4
-  'text-[#FFF2F2]', // 5
+  'text-[#B3D8A8]', // 5
   'text-[#A9B5DF]', //6
   'text-[#7886C7]', // 7
   'text-[#2D336B]', // 8
@@ -98,20 +98,20 @@ setAdjacentMines()
 
 <template>
   <main class="flex flex-col items-center justify-center h-dvh w-dvw">
-    <h1 class="text-slate-300 text-3xl">Minesweeper</h1>
+    <h1 class="text-slate-500 text-3xl">Minesweeper</h1>
     <div class="mt-[20px]">
       <!-- button: 行内块, 行内块元素被视为文本, 默认与文本的基线 baseline 对齐 -->
       <div v-for="(ceilsRow, y) of ceilsGrid" :key="y" class="flex">
         <button
           v-for="(ceil, x) of ceilsRow"
           :key="x"
-          class="w-[50px] h-[50px] border-1 hover:bg-slate-500 flex justify-center items-center border-slate-100"
+          class="w-[50px] h-[50px] border-1 hover:bg-[#FBFFE4] cursor-pointer flex justify-center items-center border-slate-800"
           :class="getCeilClass(ceil)"
           style="vertical-align: top"
           @click="handleClick(x, y)"
         >
           <div v-if="ceil.isMine">
-            <MdiMine />
+            <MineSvg />
           </div>
           <div v-else>{{ ceil.adjacentMines }}</div>
         </button>
