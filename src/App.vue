@@ -8,7 +8,7 @@ const HEIGHT = 10
 interface CeilState {
   x: number
   y: number
-  flipped?: boolean // 是否被翻开
+  flipped: boolean // 是否被翻开
   isMine?: boolean // 是否为炸弹
   adjacentMines: number // 相邻的炸弹数
 }
@@ -27,6 +27,7 @@ const ceilsGrid = reactive<CeilState[][]>(
           return {
             x,
             y,
+            flipped: false,
             adjacentMines: 0,
           }
         },
@@ -73,24 +74,36 @@ function setAdjacentMines() {
   })
 }
 
-const handleClick = (x: number, y: number) => {
-  console.log(x, ' ', y)
+const handleClick = (ceil: CeilState) => {
+  console.log(ceil.x, ' ', ceil.y)
+  ceil.flipped = true
 }
 
 const getCeilClass = (ceil: CeilState) => {
-  return ceil.isMine ? 'text-red-500' : textColors[ceil.adjacentMines]
+  if (!ceil.flipped) {
+    return 'bg-slate-100/50' // alpha channel: 50%
+  }
+  return ceil.isMine ? 'bg-red-300' : bgColors[ceil.adjacentMines]
 }
 
-const textColors = [
-  'text-transparent', // 0
-  'text-[#A3D1C6]', // 1
-  'text-[#A1E3F9]', // 2
-  'text-[#578FCA]', // 3
-  'text-[#3674B5]', // 4
-  'text-[#B3D8A8]', // 5
-  'text-[#A9B5DF]', //6
-  'text-[#7886C7]', // 7
-  'text-[#2D336B]', // 8
+const bgColors = [
+  'bg-transparent', // 0
+  'bg-orange-300', // 1
+  // amber
+  'bg-yellow-300', // 2
+  // lime
+  'bg-green-300', // 3
+  // emerald
+  'bg-teal-300', // 4
+  // cyan
+  'bg-sky-300', // 5
+  // blue
+  'bg-indigo-300', // 6
+  // violet
+  'bg-purple-300', // 7
+  // fuchsia
+  'bg-pink-300', // 8
+  // rose
 ]
 generateMines()
 setAdjacentMines()
@@ -98,26 +111,28 @@ setAdjacentMines()
 
 <template>
   <main class="flex flex-col items-center justify-center h-dvh w-dvw">
-    <h1 class="text-slate-500 text-3xl">Minesweeper</h1>
-    <div class="mt-[20px]">
+    <h1 class="text-3xl text-slate-700">Minesweeper</h1>
+    <div class="mt-[20px] border-1 border-slate-700">
       <!-- button: 行内块, 行内块元素被视为文本, 默认与文本的基线 baseline 对齐 -->
       <div v-for="(ceilsRow, y) of ceilsGrid" :key="y" class="flex">
         <button
           v-for="(ceil, x) of ceilsRow"
           :key="x"
-          class="w-[50px] h-[50px] border-1 hover:bg-[#FBFFE4] cursor-pointer flex justify-center items-center border-slate-800"
+          class="w-[50px] h-[50px] border-1 border-slate-700 hover:opacity-50 cursor-pointer flex justify-center items-center"
           :class="getCeilClass(ceil)"
           style="vertical-align: top"
-          @click="handleClick(x, y)"
+          @click="handleClick(ceil)"
         >
-          <div v-if="ceil.isMine">
-            <MineSvg />
-          </div>
-          <div v-else>{{ ceil.adjacentMines }}</div>
+          <template v-if="ceil.flipped">
+            <div v-if="ceil.isMine">
+              <MineSvg />
+            </div>
+            <div v-else>{{ ceil.adjacentMines }}</div>
+          </template>
         </button>
       </div>
     </div>
   </main>
 </template>
 
-<style scoped></style>
+<style scoped lang="scss"></style>
