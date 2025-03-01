@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+
+:root {
+  background-color: #1d293d;
+  font-family: 'Iosevka', 'YouYuan', 'Yuanti SC' !important;
+}
