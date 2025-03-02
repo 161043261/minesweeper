@@ -4,12 +4,43 @@ import MineSvg from './components/MineSvg.vue'
 
 const WIDTH = 10
 const HEIGHT = 10
+const DEV = true
+const BG_COLORS = [
+  'bg-transparent', // 0
+  'bg-orange-300', // 1
+  // amber
+  'bg-yellow-300', // 2
+  // lime
+  'bg-green-300', // 3
+  // emerald
+  'bg-teal-300', // 4
+  // cyan
+  'bg-sky-300', // 5
+  // blue
+  'bg-indigo-300', // 6
+  // violet
+  'bg-purple-300', // 7
+  // fuchsia
+  'bg-pink-300', // 8
+  // rose
+]
+let mineGenerated = false
+const DIRECTIONS = [
+  [0, -1],
+  [1, -1],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+  [-1, 1],
+  [-1, 0],
+  [-1, -1],
+]
 
 interface CeilState {
   x: number
   y: number
   flipped: boolean // 是否被翻开
-  isMine?: boolean // 是否为炸弹
+  mine?: boolean // 是否为炸弹
   adjacentMines: number // 相邻的炸弹数
 }
 
@@ -35,78 +66,82 @@ const ceilsGrid = reactive<CeilState[][]>(
   ),
 )
 
-const directions = [
-  [0, -1],
-  [1, -1],
-  [1, 0],
-  [1, 1],
-  [0, 1],
-  [-1, 1],
-  [-1, 0],
-  [-1, -1],
-]
-
-function generateMines() {
+function generateMines(initialCeil: CeilState) {
   for (const ceilsRow of ceilsGrid) {
     for (const ceil of ceilsRow) {
-      ceil.isMine = Math.random() < 0.3
+      if (initialCeil.x === ceil.x && initialCeil.y === ceil.y) {
+        continue
+      }
+      ceil.mine = Math.random() < 0.2
     }
   }
+  setAdjacentMines()
+}
+
+function expandZero(ceil: CeilState) {
+  if (ceil.adjacentMines > 0) {
+    return
+  }
+  getSiblings(ceil).forEach((item) => {
+    if (item.flipped) {
+      return
+    }
+    item.flipped = true
+    expandZero(item)
+  })
 }
 
 function setAdjacentMines() {
-  ceilsGrid.forEach((ceilsRow, y) => {
-    ceilsRow.forEach((ceil, x) => {
-      if (ceil.isMine) {
+  ceilsGrid.forEach((ceilsRow /** , y */) => {
+    ceilsRow.forEach((ceil /** , x */) => {
+      if (ceil.mine) {
         return
       }
-      directions.forEach(([dx, dy]) => {
-        const x2 = x + dx
-        const y2 = y + dy
-        if (x2 < 0 || x2 >= WIDTH || y2 < 0 || y2 >= HEIGHT) {
-          return
-        }
-        if (ceilsGrid[y2][x2].isMine) {
-          ceil.adjacentMines++
-        }
-      })
+      // DIRECTIONS.forEach(([dx, dy]) => {
+      //   const x2 = ceil.x + dx
+      //   const y2 = ceil.y + dy
+      //   if (x2 < 0 || x2 >= WIDTH || y2 < 0 || y2 >= HEIGHT) {
+      //     return
+      //   }
+      //   if (ceilsGrid[y2][x2].mine) {
+      //     ceil.adjacentMines++
+      //   }
+      // })
+      // console.log(getSiblings(ceil))
+      ceil.adjacentMines += getSiblings(ceil).filter((item) => item.mine).length
     })
   })
 }
 
-const handleClick = (ceil: CeilState) => {
-  console.log(ceil.x, ' ', ceil.y)
+function handleClick(ceil: CeilState) {
+  if (!mineGenerated) {
+    generateMines(ceil)
+    mineGenerated = true
+  }
   ceil.flipped = true
+  if (ceil.mine) {
+    alert('You failed')
+  }
+  expandZero(ceil)
 }
 
-const getCeilClass = (ceil: CeilState) => {
+function getCeilClass(ceil: CeilState) {
   if (!ceil.flipped) {
     return 'bg-slate-100/50' // alpha channel: 50%
   }
-  return ceil.isMine ? 'bg-red-300' : bgColors[ceil.adjacentMines]
+  return ceil.mine ? 'bg-red-300' : BG_COLORS[ceil.adjacentMines]
 }
 
-const bgColors = [
-  'bg-transparent', // 0
-  'bg-orange-300', // 1
-  // amber
-  'bg-yellow-300', // 2
-  // lime
-  'bg-green-300', // 3
-  // emerald
-  'bg-teal-300', // 4
-  // cyan
-  'bg-sky-300', // 5
-  // blue
-  'bg-indigo-300', // 6
-  // violet
-  'bg-purple-300', // 7
-  // fuchsia
-  'bg-pink-300', // 8
-  // rose
-]
-generateMines()
-setAdjacentMines()
+function getSiblings(ceil: CeilState): CeilState[] {
+  return DIRECTIONS.map(([dx, dy]) => {
+    const x2 = ceil.x + dx
+    const y2 = ceil.y + dy
+    if (x2 < 0 || x2 >= WIDTH || y2 < 0 || y2 >= HEIGHT) {
+      return null
+    }
+    return ceilsGrid[y2][x2]
+  }).filter(Boolean) as CeilState[] // 过滤 null 值
+}
 </script>
 
 <template>
@@ -123,8 +158,8 @@ setAdjacentMines()
           style="vertical-align: top"
           @click="handleClick(ceil)"
         >
-          <template v-if="ceil.flipped">
-            <div v-if="ceil.isMine">
+          <template v-if="ceil.flipped || DEV">
+            <div v-if="ceil.mine">
               <MineSvg />
             </div>
             <div v-else>{{ ceil.adjacentMines }}</div>
