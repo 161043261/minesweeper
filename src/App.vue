@@ -2,6 +2,7 @@
 import { ref, watchEffect } from 'vue'
 import MineSvg from './components/MineSvg.vue'
 import FlagSvg from './components/FlagSvg.vue'
+import type { CeilState } from '@/types'
 
 const WIDTH = 5
 const HEIGHT = 5
@@ -36,15 +37,6 @@ const DIRECTIONS = [
   [-1, 0],
   [-1, -1],
 ]
-
-interface CeilState {
-  x: number
-  y: number
-  flipped: boolean // 是否被翻开
-  flagged: boolean // 是否被标记
-  mine: boolean // 是否为炸弹
-  adjacentMines: number // 相邻的炸弹数
-}
 
 const ceilsGrid = ref<CeilState[][]>(
   Array.from(
