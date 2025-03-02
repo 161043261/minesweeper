@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { ref, watchEffect } from 'vue'
 import MineSvg from './components/MineSvg.vue'
+import FlagSvg from './components/FlagSvg.vue'
 
-const WIDTH = 10
-const HEIGHT = 10
-const DEV = true
+const WIDTH = 5
+const HEIGHT = 5
+const DEV = false
 const BG_COLORS = [
   'bg-transparent', // 0
   'bg-orange-300', // 1
@@ -40,11 +41,12 @@ interface CeilState {
   x: number
   y: number
   flipped: boolean // 是否被翻开
-  mine?: boolean // 是否为炸弹
+  flagged: boolean // 是否被标记
+  mine: boolean // 是否为炸弹
   adjacentMines: number // 相邻的炸弹数
 }
 
-const ceilsGrid = reactive<CeilState[][]>(
+const ceilsGrid = ref<CeilState[][]>(
   Array.from(
     {
       length: HEIGHT,
@@ -59,6 +61,8 @@ const ceilsGrid = reactive<CeilState[][]>(
             x,
             y,
             flipped: false,
+            flagged: false,
+            mine: false,
             adjacentMines: 0,
           }
         },
@@ -67,7 +71,7 @@ const ceilsGrid = reactive<CeilState[][]>(
 )
 
 function generateMines(initialCeil: CeilState) {
-  for (const ceilsRow of ceilsGrid) {
+  for (const ceilsRow of ceilsGrid.value) {
     for (const ceil of ceilsRow) {
       if (initialCeil.x === ceil.x && initialCeil.y === ceil.y) {
         continue
@@ -92,7 +96,7 @@ function expandZero(ceil: CeilState) {
 }
 
 function setAdjacentMines() {
-  ceilsGrid.forEach((ceilsRow /** , y */) => {
+  ceilsGrid.value.forEach((ceilsRow /** , y */) => {
     ceilsRow.forEach((ceil /** , x */) => {
       if (ceil.mine) {
         return
@@ -114,21 +118,42 @@ function setAdjacentMines() {
 }
 
 function handleClick(ceil: CeilState) {
+  ceil.flagged = false
   if (!mineGenerated) {
     generateMines(ceil)
     mineGenerated = true
   }
   ceil.flipped = true
   if (ceil.mine) {
-    alert('You failed')
+    alert('You lose')
+    return
   }
   expandZero(ceil)
+  // 检查左键
+  // judger()
+}
+
+function handleContextMenu(ceil: CeilState) {
+  if (ceil.flipped) {
+    return
+  }
+  ceil.flagged = !ceil.flagged
+  // 检查右键
+  // judger()
 }
 
 function getCeilClass(ceil: CeilState) {
-  if (!ceil.flipped) {
-    return 'bg-slate-100/50' // alpha channel: 50%
+  if (ceil.flagged) {
+    // alpha channel: 50%
+    return 'bg-slate-100/50'
   }
+
+  if (!ceil.flipped) {
+    // alpha channel: 50%
+    return 'hover:bg-slate-300/50 bg-slate-100/50'
+  }
+
+  // ceil.flagged === false && ceil.flipped === true
   return ceil.mine ? 'bg-red-300' : BG_COLORS[ceil.adjacentMines]
 }
 
@@ -139,9 +164,30 @@ function getSiblings(ceil: CeilState): CeilState[] {
     if (x2 < 0 || x2 >= WIDTH || y2 < 0 || y2 >= HEIGHT) {
       return null
     }
-    return ceilsGrid[y2][x2]
+    return ceilsGrid.value[y2][x2]
   }).filter(Boolean) as CeilState[] // 过滤 null 值
 }
+
+function judger() {
+  if (!mineGenerated) {
+    return
+  }
+
+  const ceils = ceilsGrid.value.flat() // 数组拍平
+  if (ceils.every((ceil) => ceil.flipped || ceil.flagged)) {
+    if (ceils.some((ceil) => ceil.flagged && !ceil.mine)) {
+      alert('You lose')
+    } else {
+      alert('You win')
+    }
+  }
+}
+
+watchEffect(
+  judger /** () => {
+  judger()
+} */,
+)
 </script>
 
 <template>
@@ -153,14 +199,19 @@ function getSiblings(ceil: CeilState): CeilState[] {
         <button
           v-for="(ceil, x) of ceilsRow"
           :key="x"
-          class="w-[50px] h-[50px] border-1 border-slate-700 hover:opacity-50 cursor-pointer flex justify-center items-center"
+          class="w-[50px] h-[50px] border-1 border-slate-700 cursor-pointer flex justify-center items-center"
           :class="getCeilClass(ceil)"
           style="vertical-align: top"
           @click="handleClick(ceil)"
+          @contextmenu.prevent="handleContextMenu(ceil)"
         >
-          <template v-if="ceil.flipped || DEV">
+          <template v-if="ceil.flagged">
+            <FlagSvg class="text-red-500" />
+          </template>
+
+          <template v-else-if="ceil.flipped || DEV">
             <div v-if="ceil.mine">
-              <MineSvg />
+              <MineSvg class="text-slate-500" />
             </div>
             <div v-else>{{ ceil.adjacentMines }}</div>
           </template>
