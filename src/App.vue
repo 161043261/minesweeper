@@ -1,42 +1,10 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
-import MineSvg from './components/MineSvg.vue'
-import FlagSvg from './components/FlagSvg.vue'
 import type { CeilState } from '@/types'
+import CeilBtn from './components/CeilBtn.vue'
+import { HEIGHT, WIDTH, DIRECTIONS } from './constants'
 
-const WIDTH = 5
-const HEIGHT = 5
-const DEV = false
-const BG_COLORS = [
-  'bg-transparent', // 0
-  'bg-orange-300', // 1
-  // amber
-  'bg-yellow-300', // 2
-  // lime
-  'bg-green-300', // 3
-  // emerald
-  'bg-teal-300', // 4
-  // cyan
-  'bg-sky-300', // 5
-  // blue
-  'bg-indigo-300', // 6
-  // violet
-  'bg-purple-300', // 7
-  // fuchsia
-  'bg-pink-300', // 8
-  // rose
-]
 let mineGenerated = false
-const DIRECTIONS = [
-  [0, -1],
-  [1, -1],
-  [1, 0],
-  [1, 1],
-  [0, 1],
-  [-1, 1],
-  [-1, 0],
-  [-1, -1],
-]
 
 const ceilsGrid = ref<CeilState[][]>(
   Array.from(
@@ -93,17 +61,6 @@ function setAdjacentMines() {
       if (ceil.mine) {
         return
       }
-      // DIRECTIONS.forEach(([dx, dy]) => {
-      //   const x2 = ceil.x + dx
-      //   const y2 = ceil.y + dy
-      //   if (x2 < 0 || x2 >= WIDTH || y2 < 0 || y2 >= HEIGHT) {
-      //     return
-      //   }
-      //   if (ceilsGrid[y2][x2].mine) {
-      //     ceil.adjacentMines++
-      //   }
-      // })
-      // console.log(getSiblings(ceil))
       ceil.adjacentMines += getSiblings(ceil).filter((item) => item.mine).length
     })
   })
@@ -117,7 +74,8 @@ function handleClick(ceil: CeilState) {
   }
   ceil.flipped = true
   if (ceil.mine) {
-    alert('You lose')
+    // console.log(ceilsGrid)
+    alert('You failed')
     return
   }
   expandZero(ceil)
@@ -132,21 +90,6 @@ function handleContextMenu(ceil: CeilState) {
   ceil.flagged = !ceil.flagged
   // 检查右键
   // judger()
-}
-
-function getCeilClass(ceil: CeilState) {
-  if (ceil.flagged) {
-    // alpha channel: 50%
-    return 'bg-slate-100/50'
-  }
-
-  if (!ceil.flipped) {
-    // alpha channel: 50%
-    return 'hover:bg-slate-300/50 bg-slate-100/50'
-  }
-
-  // ceil.flagged === false && ceil.flipped === true
-  return ceil.mine ? 'bg-red-300' : BG_COLORS[ceil.adjacentMines]
 }
 
 function getSiblings(ceil: CeilState): CeilState[] {
@@ -166,6 +109,7 @@ function judger() {
   }
 
   const ceils = ceilsGrid.value.flat() // 数组拍平
+  // console.log(ceils)
   if (ceils.every((ceil) => ceil.flipped || ceil.flagged)) {
     if (ceils.some((ceil) => ceil.flagged && !ceil.mine)) {
       alert('You lose')
@@ -188,26 +132,14 @@ watchEffect(
     <div class="mt-[20px] border-1 border-slate-700">
       <!-- button: 行内块, 行内块元素被视为文本, 默认与文本的基线 baseline 对齐 -->
       <div v-for="(ceilsRow, y) of ceilsGrid" :key="y" class="flex">
-        <button
+        <CeilBtn
+          :ceil="ceil"
           v-for="(ceil, x) of ceilsRow"
           :key="x"
-          class="w-[50px] h-[50px] border-1 border-slate-700 cursor-pointer flex justify-center items-center"
-          :class="getCeilClass(ceil)"
-          style="vertical-align: top"
           @click="handleClick(ceil)"
           @contextmenu.prevent="handleContextMenu(ceil)"
         >
-          <template v-if="ceil.flagged">
-            <FlagSvg class="text-red-500" />
-          </template>
-
-          <template v-else-if="ceil.flipped || DEV">
-            <div v-if="ceil.mine">
-              <MineSvg class="text-slate-500" />
-            </div>
-            <div v-else>{{ ceil.adjacentMines }}</div>
-          </template>
-        </button>
+        </CeilBtn>
       </div>
     </div>
   </main>
